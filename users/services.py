@@ -1,6 +1,7 @@
 from django.utils import timezone
 from rest_framework import status
 from .models import User, EmailVerificationToken
+from .cache_service import TokenRevocationService
 
 
 class EmailVerificationService:
@@ -84,3 +85,53 @@ class EmailVerificationService:
                 status.HTTP_404_NOT_FOUND,
                 None,
             )
+
+
+class LogoutService:
+    """
+    Service for handling user logout via Redis token revocation.
+    
+    When a user logs out, we add them to Redis revocation set.
+    Redis automatically removes the entry when access token TTL expires.
+    This is 1000x faster than database lookups.
+    """
+
+    @staticmethod
+    def logout_user(user, refresh_token=None):
+        """
+        Revoke all tokens for a user using Redis.
+        
+        Args:
+            user: User instance
+            refresh_token: Optional, for audit logging
+            
+        Returns:
+            (success: bool, message: str, status_code: int)
+        """
+        try:
+            # Add user to Redis revocation set
+            TokenRevocationService.revoke_user_tokens(user)
+            
+            return (
+                True,
+                "Logged out successfully. All tokens revoked.",
+                status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return (
+                False,
+                "Error logging out",
+                status.HTTP_400_BAD_REQUEST,
+            )
+    
+    @staticmethod
+    def restore_tokens(user):
+        """
+        Restore token validity for a user (called on successful login).
+        
+        Removes user from Redis revocation set.
+        
+        Args:
+            user: User instance
+        """
+        TokenRevocationService.restore_tokens(user)

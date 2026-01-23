@@ -6,11 +6,39 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import extend_schema
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .serializers import RegisterSerializer, UserSerializer, VerifyEmailSerializer, ResendVerificationEmailSerializer
-from .services import EmailVerificationService
+from .serializers import RegisterSerializer, UserSerializer, VerifyEmailSerializer, ResendVerificationEmailSerializer, LogoutSerializer
+from .services import EmailVerificationService, LogoutService
+from .tokens import CustomRefreshToken
 
 class AuthViewSet(ViewSet):
+    serializer_class = RegisterSerializer
+    
+    @extend_schema(request=TokenObtainPairSerializer)
+    @action(detail=False, methods=["post"], permission_classes=[AllowAny])
+    def login(self, request):
+        """
+        Authenticate user and issue tokens.
+        
+        On successful login:
+        - Restore token validity (is_token_revoked=False)
+        - Issue new tokens with current revocation status
+        """
+        serializer = TokenObtainPairSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.user
+        
+        # Restore token validity on login
+        LogoutService.restore_tokens(user)
+        
+        # Generate tokens with current revocation status
+        refresh = CustomRefreshToken.for_user(user)
+        
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        }, status=200)
     
     @extend_schema(request=RegisterSerializer)
     @action(detail=False, methods=["post"], permission_classes=[AllowAny])
@@ -38,7 +66,7 @@ class AuthViewSet(ViewSet):
         return Response(serializer.data)
 
     @extend_schema(request=VerifyEmailSerializer)
-    @action(detail=False, methods=["post"], permission_classes=[AllowAny])
+    @action(detail=False, methods=["post"], permission_classes=[IsAuthenticated])
     def verify_email(self, request):
         """Verify email using token"""
         serializer = VerifyEmailSerializer(data=request.data)
@@ -54,7 +82,7 @@ class AuthViewSet(ViewSet):
             return Response({"error": message}, status=status_code)
 
     @extend_schema(request=ResendVerificationEmailSerializer)
-    @action(detail=False, methods=["post"], permission_classes=[AllowAny])
+    @action(detail=False, methods=["post"], permission_classes=[IsAuthenticated])
     def resend_verification_email(self, request):
         """Resend verification email"""
         serializer = ResendVerificationEmailSerializer(data=request.data)
@@ -69,9 +97,27 @@ class AuthViewSet(ViewSet):
         else:
             return Response({"error": message}, status=status_code)
 
+    @extend_schema(request=LogoutSerializer)
+    @action(detail=False, methods=["post"], permission_classes=[IsAuthenticated])
+    def logout(self, request):
+        """Logout user by incrementing token_version"""
+        serializer = LogoutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        refresh_token = serializer.validated_data['refresh']
+        
+        # Use service to logout (increments token_version)
+        success, message, status_code = LogoutService.logout_user(request.user, refresh_token)
+        
+        if success:
+            return Response({"msg": message}, status=status_code)
+        else:
+            return Response({"error": message}, status=status_code)
+
 
 class UserViewSet(ViewSet):
     permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
 
+    @extend_schema(responses=UserSerializer)
     def list(self, request):
         return Response({"msg": "User dashboard"})

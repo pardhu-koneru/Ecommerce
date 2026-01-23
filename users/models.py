@@ -10,7 +10,7 @@ from datetime import timedelta
 
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
-    username = models.CharField(max_length=150, unique=True, blank=True, null=True)
+    username = models.CharField(max_length=150,blank=True, null=True)
     first_name = models.CharField(max_length=150, blank=True)
     last_name = models.CharField(max_length=150, blank=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
