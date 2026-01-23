@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from .models import User, EmailVerificationToken
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -20,6 +21,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ["id", "email", "username", "first_name", "last_name", "phone_number", "email_verified", "role"]
 
+    @extend_schema_field(serializers.CharField)
     def get_role(self, obj):
         return "admin" if obj.is_staff else "user"
 
@@ -34,3 +36,7 @@ class VerifyEmailSerializer(serializers.Serializer):
 
 class ResendVerificationEmailSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
+
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField()

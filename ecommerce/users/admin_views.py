@@ -11,6 +11,7 @@ from .models import User
 
 class AdminViewSet(ViewSet):
     permission_classes = [IsAdminUser]
+    serializer_class = MakeStaffSerializer
 
     @extend_schema(request=MakeStaffSerializer)
     @action(detail=False, methods=["post"])

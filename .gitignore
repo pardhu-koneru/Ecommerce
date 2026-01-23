@@ -23,13 +23,9 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# Virtual Environment
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-.venv
+# Django Migrations (exclude all migrations except __init__.py)
+*/migrations/*.py
+!*/migrations/__init__.py
 
 # Django
 *.log
@@ -38,6 +34,30 @@ db.sqlite3
 db.sqlite3-journal
 /media
 /staticfiles
+
+#virtual Environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Media files (images, videos, documents)
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.svg
+*.webp
+*.mp4
+*.mov
+*.avi
+*.pdf
+*.doc
+*.docx
+*.xls
+*.xlsx
 
 # IDE
 .vscode/
