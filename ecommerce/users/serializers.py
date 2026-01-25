@@ -40,3 +40,34 @@ class ResendVerificationEmailSerializer(serializers.Serializer):
 
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    role = serializers.SerializerMethodField()
+    password = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
+    class Meta:
+        model = User
+        fields = ["id", "email", "username", "first_name", "last_name", "phone_number", 
+                  "password", "email_verified", "is_active", "is_staff", "role", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+    @extend_schema_field(serializers.CharField)
+    def get_role(self, obj):
+        return "admin" if obj.is_staff else "user"
+
+    def create(self, validated_data):
+        password = validated_data.pop('password', None)
+        user = User.objects.create(**validated_data)
+        if password:
+            user.set_password(password)
+            user.save()
+        return user
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if password:
+            instance.set_password(password)
+        instance.save()
+        return instance
