@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_spectacular',
     'users',
+    'categories',
 ]
 
 MIDDLEWARE = [
@@ -124,6 +125,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Media files (User uploads)
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

@@ -1,4 +1,11 @@
 # Python
+<<<<<<< HEAD
+=======
+
+# Django
+db.sqlite3
+
+>>>>>>> 37f25ac (gitignore updated)
 __pycache__/
 *.py[cod]
 *$py.class
@@ -100,4 +107,8 @@ pip-delete-this-directory.txt
 .pydevproject
 .settings/
 *.sublime-project
+<<<<<<< HEAD
 *.sublime-workspace
+=======
+*.sublime-workspace
+>>>>>>> 37f25ac (gitignore updated)
