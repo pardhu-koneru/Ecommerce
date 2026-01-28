@@ -7,6 +7,7 @@ db.sqlite3
 
 >>>>>>> 37f25ac (gitignore updated)
 __pycache__/
+migrations/
 *.py[cod]
 *$py.class
 *.so

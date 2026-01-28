@@ -1,0 +1,440 @@
+﻿[
+{
+  "model": "auth.permission",
+  "pk": 1,
+  "fields": {
+    "name": "Can add log entry",
+    "content_type": 1,
+    "codename": "add_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 2,
+  "fields": {
+    "name": "Can change log entry",
+    "content_type": 1,
+    "codename": "change_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 3,
+  "fields": {
+    "name": "Can delete log entry",
+    "content_type": 1,
+    "codename": "delete_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 4,
+  "fields": {
+    "name": "Can view log entry",
+    "content_type": 1,
+    "codename": "view_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 5,
+  "fields": {
+    "name": "Can add permission",
+    "content_type": 3,
+    "codename": "add_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 6,
+  "fields": {
+    "name": "Can change permission",
+    "content_type": 3,
+    "codename": "change_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 7,
+  "fields": {
+    "name": "Can delete permission",
+    "content_type": 3,
+    "codename": "delete_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 8,
+  "fields": {
+    "name": "Can view permission",
+    "content_type": 3,
+    "codename": "view_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 9,
+  "fields": {
+    "name": "Can add group",
+    "content_type": 2,
+    "codename": "add_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 10,
+  "fields": {
+    "name": "Can change group",
+    "content_type": 2,
+    "codename": "change_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 11,
+  "fields": {
+    "name": "Can delete group",
+    "content_type": 2,
+    "codename": "delete_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 12,
+  "fields": {
+    "name": "Can view group",
+    "content_type": 2,
+    "codename": "view_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 13,
+  "fields": {
+    "name": "Can add content type",
+    "content_type": 4,
+    "codename": "add_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 14,
+  "fields": {
+    "name": "Can change content type",
+    "content_type": 4,
+    "codename": "change_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 15,
+  "fields": {
+    "name": "Can delete content type",
+    "content_type": 4,
+    "codename": "delete_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 16,
+  "fields": {
+    "name": "Can view content type",
+    "content_type": 4,
+    "codename": "view_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 17,
+  "fields": {
+    "name": "Can add session",
+    "content_type": 5,
+    "codename": "add_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 18,
+  "fields": {
+    "name": "Can change session",
+    "content_type": 5,
+    "codename": "change_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 19,
+  "fields": {
+    "name": "Can delete session",
+    "content_type": 5,
+    "codename": "delete_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 20,
+  "fields": {
+    "name": "Can view session",
+    "content_type": 5,
+    "codename": "view_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 21,
+  "fields": {
+    "name": "Can add user",
+    "content_type": 7,
+    "codename": "add_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 22,
+  "fields": {
+    "name": "Can change user",
+    "content_type": 7,
+    "codename": "change_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 23,
+  "fields": {
+    "name": "Can delete user",
+    "content_type": 7,
+    "codename": "delete_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 24,
+  "fields": {
+    "name": "Can view user",
+    "content_type": 7,
+    "codename": "view_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 25,
+  "fields": {
+    "name": "Can add email verification token",
+    "content_type": 6,
+    "codename": "add_emailverificationtoken"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 26,
+  "fields": {
+    "name": "Can change email verification token",
+    "content_type": 6,
+    "codename": "change_emailverificationtoken"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 27,
+  "fields": {
+    "name": "Can delete email verification token",
+    "content_type": 6,
+    "codename": "delete_emailverificationtoken"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 28,
+  "fields": {
+    "name": "Can view email verification token",
+    "content_type": 6,
+    "codename": "view_emailverificationtoken"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 29,
+  "fields": {
+    "name": "Can add category",
+    "content_type": 8,
+    "codename": "add_category"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 30,
+  "fields": {
+    "name": "Can change category",
+    "content_type": 8,
+    "codename": "change_category"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 31,
+  "fields": {
+    "name": "Can delete category",
+    "content_type": 8,
+    "codename": "delete_category"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 32,
+  "fields": {
+    "name": "Can view category",
+    "content_type": 8,
+    "codename": "view_category"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 1,
+  "fields": {
+    "app_label": "admin",
+    "model": "logentry"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 2,
+  "fields": {
+    "app_label": "auth",
+    "model": "group"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 3,
+  "fields": {
+    "app_label": "auth",
+    "model": "permission"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 4,
+  "fields": {
+    "app_label": "contenttypes",
+    "model": "contenttype"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 5,
+  "fields": {
+    "app_label": "sessions",
+    "model": "session"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 6,
+  "fields": {
+    "app_label": "users",
+    "model": "emailverificationtoken"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 7,
+  "fields": {
+    "app_label": "users",
+    "model": "user"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 8,
+  "fields": {
+    "app_label": "categories",
+    "model": "category"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "ak4p3ckyja4trrizdeuo0pdpwg77mcgn",
+  "fields": {
+    "session_data": ".eJxVjEEOwiAQRe_C2hAYpgRcuvcMhOmAVA0kpV0Z764kXej2vff_S4S4byXsPa1hYXEWIE6_jOL8SHUIvsd6a3JudVsXkiORh-3y2jg9L0f7d1BiL991BjKK2CrydgIw1niTMiDahINysi46jBrZYFZZE2Zt0WkG9DB58f4Az9E3Dg:1vkLwI:K8ez3AWiwQI0Qi3s1ZXpebCO6CuKkGquVN__DmTDvdw",
+    "expire_date": "2026-02-09T12:43:30.392Z"
+  }
+},
+{
+  "model": "users.user",
+  "pk": 1,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$h0bp6yRbadjSIa5eNhizBT$R4WKI3v/Qcgab6+3zxn0rI7alixDwSc5QjCfWc4i8fE=",
+    "last_login": null,
+    "is_superuser": false,
+    "email": "test@example.com",
+    "username": null,
+    "first_name": "",
+    "last_name": "",
+    "phone_number": null,
+    "email_verified": false,
+    "is_staff": false,
+    "is_active": true,
+    "created_at": "2026-01-25T16:02:30.961Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.user",
+  "pk": 2,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$gyGh0elLVYtl5tCiK0zSN5$oBSYNLzoPFDFO8u9RH0GfHnLK6OOaFongso0Hm/5uGo=",
+    "last_login": "2026-01-26T12:43:30.380Z",
+    "is_superuser": true,
+    "email": "admin@gmail.com",
+    "username": "admin",
+    "first_name": "admin",
+    "last_name": "admin",
+    "phone_number": "6454816546",
+    "email_verified": false,
+    "is_staff": true,
+    "is_active": true,
+    "created_at": "2026-01-25T16:03:51.385Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "users.emailverificationtoken",
+  "pk": 1,
+  "fields": {
+    "user": 2,
+    "token": "7620cbeb-36a6-4193-b888-84e36e5003a2",
+    "created_at": "2026-01-25T16:03:51.414Z",
+    "expires_at": "2026-01-26T16:03:51.414Z"
+  }
+},
+{
+  "model": "categories.category",
+  "pk": "1aaf76cf-2069-4a8f-8c8c-330f489abca4",
+  "fields": {
+    "name": "Mobile",
+    "slug": "mobile",
+    "description": "Mobile",
+    "image": "categories/industries-consumer-electronics_Zvirver.jpeg",
+    "parent": "65e6fa72-b2c5-442c-8d9f-aa4b6cde6ccf",
+    "is_active": true,
+    "created_at": "2026-01-25T17:33:50.818Z",
+    "updated_at": "2026-01-25T17:33:50.818Z"
+  }
+},
+{
+  "model": "categories.category",
+  "pk": "65e6fa72-b2c5-442c-8d9f-aa4b6cde6ccf",
+  "fields": {
+    "name": "Electronics",
+    "slug": "electronics",
+    "description": "All laptops, mobiles...",
+    "image": "categories/industries-consumer-electronics.jpeg",
+    "parent": null,
+    "is_active": true,
+    "created_at": "2026-01-25T16:30:34.210Z",
+    "updated_at": "2026-01-25T16:30:34.210Z"
+  }
+}
+]
