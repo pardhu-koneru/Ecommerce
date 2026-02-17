@@ -30,11 +30,16 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-
+/schema.yml
+schema.yml
 # Django Migrations (exclude all migrations except __init__.py)
 */migrations/*.py
 !*/migrations/__init__.py
 
+schema.yml       ← Auto-generated OpenAPI spec
+schema.json      ← Alternative format
+celerybeat.pid   ← Task scheduler
+*.log            ← All logs
 # Django
 *.log
 local_settings.py

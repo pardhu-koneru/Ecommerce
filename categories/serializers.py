@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from .models import Category
 
 
@@ -11,7 +12,8 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'slug', 'description', 'image', 'parent', 'parent_name', 'is_active', 'children', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
 
-    def get_children(self, obj):
+    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
+    def get_children(self, obj) -> list:
         if obj.children.exists():
             return CategorySerializer(obj.children.all(), many=True).data
         return []

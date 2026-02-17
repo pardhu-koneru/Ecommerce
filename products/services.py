@@ -140,35 +140,48 @@ class ProductService:
     @staticmethod
     def trigger_ai_document_generation(product):
         """
-        Trigger AI document generation for a product.
-        This would normally call a Celery task.
-        For now, we'll create a placeholder AIDocument.
+        Trigger AI document generation for a product (async via Celery).
+        
+        This enqueues a background task to:
+        1. Process product images with vision model
+        2. Generate combined AI document text
+        3. Create embeddings with pgvector
+        
+        Falls back to a text-only AIDocument if Celery is unavailable.
         
         Args:
             product: Product instance
         """
-        # Generate text content for LLM
-        text_content = ProductService.generate_product_text(product)
+        import logging
+        logger = logging.getLogger(__name__)
         
-        # Store AI document
-        AIDocument.objects.update_or_create(
-            source_type='product',
-            source_id=str(product.id),
-            defaults={
-                'text_content': text_content,
-                'metadata_json': {
-                    'product_title': product.title,
-                    'category': product.category.name,
-                    'price': float(product.price),
-                    'currency': product.currency,
-                    'rating': product.rating_avg,
-                    'in_stock': product.stock_quantity > 0,
-                }
-            }
-        )
-        
-        # TODO: Queue async task for embedding generation
-        # tasks.generate_product_embeddings.delay(str(product.id))
+        try:
+            from .tasks import generate_ai_document_for_product
+            generate_ai_document_for_product.delay(str(product.id))
+            logger.info(f"Celery task enqueued for product {product.title}")
+        except Exception as e:
+            # Celery broker unavailable – create text-only document synchronously
+            logger.warning(f"Celery unavailable, creating text-only AI doc: {e}")
+            try:
+                text_content = ProductService.generate_product_text(product)
+                AIDocument.objects.update_or_create(
+                    source_type='product',
+                    source_id=str(product.id),
+                    defaults={
+                        'text_content': text_content,
+                        'metadata_json': {
+                            'product_title': product.title,
+                            'category': product.category.name,
+                            'price': float(product.price),
+                            'currency': product.currency,
+                            'rating': product.rating_avg,
+                            'in_stock': product.stock_quantity > 0,
+                            'sync_fallback': True,
+                        }
+                    }
+                )
+            except Exception as inner_e:
+                logger.error(f"Sync fallback also failed: {inner_e}")
     
     @staticmethod
     def generate_product_text(product):

@@ -4,6 +4,11 @@ from categories.models import Category
 import uuid
 import json
 
+try:
+    from pgvector.django import VectorField
+except ImportError:
+    VectorField = models.BinaryField  # Fallback
+
 
 class Product(models.Model):
     """
@@ -168,4 +173,43 @@ class AIDocument(models.Model):
 
     def __str__(self):
         return f"AIDocument({self.source_type}:{self.source_id})"
+
+
+class AIDocumentEmbedding(models.Model):
+    """
+    Stores vector embeddings for an AIDocument using pgvector.
+    
+    Links to AIDocument and stores the vector representation
+    of the document text for semantic search.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    document = models.OneToOneField(AIDocument, on_delete=models.CASCADE, related_name='embedding')
+    
+    # Vector field - stores embeddings generated from document text_content
+    # Dimension depends on embedding model (typically 384, 768, 1536)
+    embedding = VectorField(dimensions=768, null=True, blank=True)  # 768-dim for nomic-embed-text
+    
+    # Metadata about the embedding
+    metadata_json = models.JSONField(default=dict)
+    # Example:
+    # {
+    #   "product_id": "uuid",
+    #   "product_title": "iPhone 15",
+    #   "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    #   "dimension": 384,
+    #   "generated_at": "2026-01-30T10:00:00Z"
+    # }
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'products_ai_document_embedding'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['created_at']),
+        ]
+
+    def __str__(self):
+        return f"AIDocumentEmbedding({self.document_id})"
 

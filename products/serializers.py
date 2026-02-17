@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from .models import Product, ProductAttribute, ProductImage, AIDocument
 
 
@@ -26,7 +27,8 @@ class ProductListSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'price', 'currency', 'rating_avg', 'rating_count', 'is_active', 'primary_image']
         read_only_fields = ['id']
     
-    def get_primary_image(self, obj):
+    @extend_schema_field(serializers.DictField(allow_null=True))
+    def get_primary_image(self, obj) -> dict | None:
         """Get the primary image URL"""
         primary = obj.images.filter(is_primary=True).first()
         if primary:
