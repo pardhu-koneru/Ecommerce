@@ -197,9 +197,17 @@ def act(state: AgentState) -> AgentState:
     # Clean None values
     params = {k: v for k, v in params.items() if v is not None}
 
-    # Special handling: ComparisonTool needs product_ids from prior results
-    if tool_name == "ComparisonTool" and not params.get("product_ids"):
-        params["product_ids"] = _extract_product_ids(tool_outputs)
+    # Special handling: ComparisonTool needs product_ids from prior results.
+    # The LLM may return product names ("iPhone 14") instead of UUIDs.
+    # Prefer real UUIDs from prior tool outputs when available;
+    # otherwise keep whatever the LLM gave — ComparisonTool can
+    # resolve product names to UUIDs via title search.
+    if tool_name == "ComparisonTool":
+        prior_ids = _extract_product_ids(tool_outputs)
+        if prior_ids:
+            params["product_ids"] = prior_ids
+        elif not params.get("product_ids"):
+            params["product_ids"] = []
 
     # Execute tool
     try:
