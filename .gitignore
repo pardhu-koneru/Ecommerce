@@ -35,7 +35,8 @@ schema.yml
 # Django Migrations (exclude all migrations except __init__.py)
 */migrations/*.py
 !*/migrations/__init__.py
-
+management/commands/
+management/
 schema.yml       ← Auto-generated OpenAPI spec
 schema.json      ← Alternative format
 celerybeat.pid   ← Task scheduler

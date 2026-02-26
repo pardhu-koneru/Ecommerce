@@ -3,8 +3,9 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import extend_schema, OpenApiParameter, inline_serializer
 from drf_spectacular.types import OpenApiTypes
+from rest_framework import serializers as drf_serializers
 
 from .models import Product, ProductAttribute, ProductImage
 from .serializers import (
@@ -38,11 +39,8 @@ class AdminProductManagementViewSet(ModelViewSet):
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
             return CreateUpdateProductSerializer
-        # For actions with no request body, return None so drf-spectacular
-        # doesn't auto-generate a requestBody from ProductSerializer.
-        # The @extend_schema(request=None) on each action handles the schema.
-        if self.action in ['process_ai', 'toggle_active', 'ai_status', 'batch_ai_status']:
-            return None
+        if self.action == 'retrieve':
+            return ProductDetailSerializer
         return ProductSerializer
 
     @extend_schema(description="List all products including inactive ones (admin only)")
@@ -372,18 +370,25 @@ class AdminProductManagementViewSet(ModelViewSet):
 
     @extend_schema(
         description="Batch process multiple products with AI (async)",
-        request={
-            'type': 'object',
-            'properties': {
-                'product_ids': {
-                    'type': 'array',
-                    'items': {'type': 'string', 'format': 'uuid'},
-                    'description': 'List of product UUIDs to process'
-                }
-            },
-            'required': ['product_ids']
-        },
-        responses={202: {'description': 'Batch task enqueued'}}
+        request=inline_serializer(
+            name='BatchProcessAIRequest',
+            fields={
+                'product_ids': drf_serializers.ListField(
+                    child=drf_serializers.UUIDField(),
+                    help_text='List of product UUIDs to process'
+                )
+            }
+        ),
+        responses={202: inline_serializer(
+            name='BatchProcessAIResponse',
+            fields={
+                'status': drf_serializers.CharField(),
+                'message': drf_serializers.CharField(),
+                'task_id': drf_serializers.CharField(),
+                'product_count': drf_serializers.IntegerField(),
+                'check_status_url': drf_serializers.CharField(),
+            }
+        )}
     )
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated, IsAdmin])
     def batch_process_ai(self, request):

@@ -68,6 +68,9 @@ PRODUCT INFORMATION:
 {product_text}"""
         
         # 6. Create/update AIDocument
+        # Collect attributes as a dict for metadata (enables structured access)
+        product_attrs = {a.key: a.value for a in product.attributes.all()}
+
         ai_document, created = AIDocument.objects.update_or_create(
             source_type='product',
             source_id=str(product.id),
@@ -75,14 +78,17 @@ PRODUCT INFORMATION:
                 'text_content': combined_text,
                 'metadata_json': {
                     'product_title': product.title,
+                    'brand': product.brand or 'Unknown',
                     'category': product.category.name,
                     'price': float(product.price),
                     'currency': product.currency,
-                    'rating': product.rating_avg,
+                    'rating_avg': product.rating_avg,
                     'rating_count': product.rating_count,
+                    'stock_quantity': product.stock_quantity,
                     'in_stock': product.stock_quantity > 0,
                     'image_count': len(product_images),
                     'has_vision_analysis': bool(product_images),
+                    'attributes': product_attrs,
                 }
             }
         )

@@ -144,3 +144,53 @@ class UploadProductImageSerializer(serializers.Serializer):
         default=False,
         help_text="Set as primary image for product"
     )
+
+# ────────────────────────────────────────────────────────────────
+# Agentic RAG API Serializers
+# ────────────────────────────────────────────────────────────────
+
+class AgenticRAGQuerySerializer(serializers.Serializer):
+    """Request serializer for agentic RAG queries"""
+    query = serializers.CharField(
+        required=True,
+        max_length=500,
+        help_text="Natural language question about products (e.g., 'best gaming laptop under 80000')"
+    )
+    image = serializers.ImageField(
+        required=False,
+        allow_empty_file=False,
+        help_text="Optional product image for visual search"
+    )
+
+    def validate_query(self, value):
+        """Validate query is not empty"""
+        if not value.strip():
+            raise serializers.ValidationError("Query cannot be empty")
+        return value.strip()
+
+
+class AgenticRAGResponseSerializer(serializers.Serializer):
+    """Response serializer for agentic RAG queries"""
+    answer = serializers.CharField(
+        help_text="Generated answer grounded in retrieved context"
+    )
+    confidence = serializers.FloatField(
+        help_text="Confidence score (0.0 to 1.0)"
+    )
+    intent = serializers.CharField(
+        help_text="Detected query intent (factual, product_search, comparison, etc.)"
+    )
+    plan = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="Ordered retrieval steps executed"
+    )
+    tools_used = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="Tools invoked (SQLFilterTool, ProductEmbeddingSearchTool, etc.)"
+    )
+    loop_count = serializers.IntegerField(
+        help_text="Number of re-planning loops (0 = no loops, high confidence on first pass)"
+    )
+    evaluation_notes = serializers.CharField(
+        help_text="Evaluation feedback and notes"
+    )

@@ -3,17 +3,24 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from drf_spectacular.openapi import OpenApiTypes
+import base64
+import logging
 
 from .models import Product
 from .serializers import (
     ProductSerializer,
     ProductListSerializer,
     ProductDetailSerializer,
-    ProductAttributeSerializer
+    ProductAttributeSerializer,
+    AgenticRAGQuerySerializer,
+    AgenticRAGResponseSerializer,
 )
 from .services import ProductService
+
+logger = logging.getLogger(__name__)
 
 
 class ProductViewSet(ReadOnlyModelViewSet):
@@ -247,4 +254,104 @@ class ProductViewSet(ReadOnlyModelViewSet):
             return Response(
                 {'detail': 'Product not found'},
                 status=status.HTTP_404_NOT_FOUND
+            )
+
+# ────────────────────────────────────────────────────────────────
+# Agentic RAG API Endpoint
+# ────────────────────────────────────────────────────────────────
+
+class AgenticRAGQueryView(APIView):
+    """
+    API endpoint for the Agentic RAG system.
+    
+    Accepts natural language queries about products and returns:
+    - Grounded answer (no hallucinations)
+    - Confidence score
+    - Query intent + execution plan
+    - Tools invoked
+    
+    Supports multimodal search (text + optional image).
+    """
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request=AgenticRAGQuerySerializer,
+        responses=AgenticRAGResponseSerializer,
+        description="Query the Agentic RAG system for products, comparisons, recommendations, etc.",
+        examples=[
+            OpenApiExample(
+                name="Product Search Example",
+                description="Search for gaming laptops under a budget",
+                value={
+                    "query": "best gaming laptop under 80000",
+                },
+                request_only=True,
+            ),
+            OpenApiExample(
+                name="Product Search Response",
+                description="Example RAG response",
+                value={
+                    "answer": "Based on available products...",
+                    "confidence": 0.92,
+                    "intent": "product_search",
+                    "plan": ["Run ProductEmbeddingSearchTool...", "Rank final candidates"],
+                    "tools_used": ["ProductEmbeddingSearchTool"],
+                    "loop_count": 0,
+                    "evaluation_notes": "High confidence; grounded answer."
+                },
+                response_only=True,
+            ),
+        ]
+    )
+    def post(self, request, *args, **kwargs):
+        """Execute an agentic RAG query."""
+        serializer = AgenticRAGQuerySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        query = serializer.validated_data["query"]
+        image_file = serializer.validated_data.get("image")
+
+        # Convert image to base64 if provided
+        image_b64 = None
+        if image_file:
+            try:
+                image_data = image_file.read()
+                image_b64 = base64.standard_b64encode(image_data).decode("utf-8")
+            except Exception as e:
+                logger.error(f"Failed to encode image: {e}")
+                return Response(
+                    {"error": "Failed to process image"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        # Execute agentic RAG query
+        try:
+            from ai_agentic_rag.graph.workflow import run_query
+
+            result = run_query(query=query, image_data=image_b64)
+
+            response_data = {
+                "answer": result.get("answer", ""),
+                "confidence": result.get("confidence", 0.0),
+                "intent": result.get("intent", ""),
+                "plan": result.get("plan", []),
+                "tools_used": result.get("tools_used", []),
+                "loop_count": result.get("loop_count", 0),
+                "evaluation_notes": result.get("evaluation_notes", ""),
+            }
+
+            response_serializer = AgenticRAGResponseSerializer(response_data)
+            return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+        except ImportError as e:
+            logger.error(f"RAG system not available: {e}")
+            return Response(
+                {"error": "RAG system not initialized"},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except Exception as e:
+            logger.exception(f"RAG query failed: {e}")
+            return Response(
+                {"error": f"Query processing failed: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

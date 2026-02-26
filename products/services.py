@@ -164,6 +164,7 @@ class ProductService:
             logger.warning(f"Celery unavailable, creating text-only AI doc: {e}")
             try:
                 text_content = ProductService.generate_product_text(product)
+                product_attrs = {a.key: a.value for a in product.attributes.all()}
                 AIDocument.objects.update_or_create(
                     source_type='product',
                     source_id=str(product.id),
@@ -171,12 +172,16 @@ class ProductService:
                         'text_content': text_content,
                         'metadata_json': {
                             'product_title': product.title,
+                            'brand': product.brand or 'Unknown',
                             'category': product.category.name,
                             'price': float(product.price),
                             'currency': product.currency,
-                            'rating': product.rating_avg,
+                            'rating_avg': product.rating_avg,
+                            'rating_count': product.rating_count,
+                            'stock_quantity': product.stock_quantity,
                             'in_stock': product.stock_quantity > 0,
                             'sync_fallback': True,
+                            'attributes': product_attrs,
                         }
                     }
                 )
@@ -189,33 +194,37 @@ class ProductService:
         Convert product data to LLM-readable text.
         This is the ONLY text LLM will read about this product.
         
+        The text is also used for BM25 full-text search and embedding generation,
+        so it includes explicit spec keywords for better retrieval matching.
+        
         Args:
             product: Product instance
             
         Returns:
             Formatted text for LLM
         """
-        # Build attributes string
+        # Build attributes string with explicit keywords for BM25 matching
         attributes_text = ""
         if product.attributes.exists():
             attrs = product.attributes.all()
-            attributes_text = "\n".join([f"- {attr.key}: {attr.value}" for attr in attrs])
+            attr_lines = []
+            for attr in attrs:
+                attr_lines.append(f"- {attr.key}: {attr.value}")
+            attributes_text = "\n".join(attr_lines)
         
         # Build text content
-        text = f"""
-PRODUCT: {product.title}
+        text = f"""PRODUCT: {product.title}
 BRAND: {product.brand or 'Unknown'}
 CATEGORY: {product.category.name}
 PRICE: {product.currency} {product.price}
-STOCK: {'In stock' if product.stock_quantity > 0 else 'Out of stock'}
+STOCK: {'In stock' if product.stock_quantity > 0 else 'Out of stock'} ({product.stock_quantity} units)
 RATING: {product.rating_avg}/5.0 ({product.rating_count} reviews)
 
 DESCRIPTION:
 {product.description}
 
 SPECIFICATIONS:
-{attributes_text if attributes_text else 'No specifications available'}
-"""
+{attributes_text if attributes_text else 'No specifications available'}"""
         return text.strip()
     
     @staticmethod
