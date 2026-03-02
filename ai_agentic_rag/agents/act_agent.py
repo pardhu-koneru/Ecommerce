@@ -3,9 +3,13 @@ Act Agent (Tool Executor) — executes one plan step at a time.
 
 Responsibilities:
   - Parse the current step description to identify the right tool
-  - Extract parameters from query + analysis + prior tool outputs
+  - Extract parameters: deterministic for simple tools, LLM for complex ones
   - Execute the tool and store structured output in state["tool_outputs"]
   - Advance state["current_step_index"]
+
+Param extraction strategy:
+  - SQLFilterTool + ComparisonTool: LLM (70B) — needs structured parsing
+  - All other tools: deterministic (query passthrough, top_k defaults)
 """
 import json
 import logging
@@ -122,7 +126,7 @@ def _extract_product_ids(tool_outputs: List[Dict[str, Any]]) -> List[str]:
 
 
 def _extract_params_llm(query: str, tool_name: str, step: str, prev_summary: str) -> Dict[str, Any]:
-    """Use LLM to extract parameters for the tool call."""
+    """Use 70B LLM to extract parameters for tools that need structured parsing."""
     from groq import Groq
 
     client = Groq(api_key=GROQ_API_KEY)
@@ -186,28 +190,52 @@ def act(state: AgentState) -> AgentState:
         state["current_step_index"] = idx + 1
         return state
 
-    # Extract parameters
-    try:
-        prev_summary = _summarize_previous(tool_outputs)
-        params = _extract_params_llm(query, tool_name, step, prev_summary)
-    except Exception as e:
-        logger.warning(f"LLM param extraction failed ({e}), using fallback")
+    # ── Parameter extraction strategy ──────────────────────────────
+    # SQLFilterTool: needs LLM to parse price/brand/category/attributes
+    # ComparisonTool: needs LLM to extract product names from the query
+    #   (it can resolve names to UUIDs via title search internally)
+    # All other tools: deterministic (query passthrough, top_k defaults)
+    _LLM_REQUIRED_TOOLS = {"SQLFilterTool", "ComparisonTool"}
+
+    if tool_name in _LLM_REQUIRED_TOOLS:
+        try:
+            prev_summary = _summarize_previous(tool_outputs)
+            params = _extract_params_llm(query, tool_name, step, prev_summary)
+        except Exception as e:
+            logger.warning(f"LLM param extraction failed ({e}), using fallback")
+            params = _extract_params_fallback(query, tool_name, state)
+    else:
         params = _extract_params_fallback(query, tool_name, state)
 
     # Clean None values
     params = {k: v for k, v in params.items() if v is not None}
 
-    # Special handling: ComparisonTool needs product_ids from prior results.
-    # The LLM may return product names ("iPhone 14") instead of UUIDs.
-    # Prefer real UUIDs from prior tool outputs when available;
-    # otherwise keep whatever the LLM gave — ComparisonTool can
-    # resolve product names to UUIDs via title search.
+    # Special handling for ComparisonTool:
+    # The LLM should extract product names (e.g. ["Samsung Galaxy S24 Ultra", "iPhone 15 Pro Max"])
+    # which ComparisonTool._resolve_product_ids() will resolve via title search.
+    # Only fall back to prior tool output IDs if LLM returned nothing useful.
     if tool_name == "ComparisonTool":
-        prior_ids = _extract_product_ids(tool_outputs)
-        if prior_ids:
-            params["product_ids"] = prior_ids
-        elif not params.get("product_ids"):
-            params["product_ids"] = []
+        llm_ids = params.get("product_ids", [])
+        if llm_ids and len(llm_ids) >= 2:
+            # LLM extracted product names/IDs — use them (ComparisonTool resolves names)
+            logger.info(f"ComparisonTool using LLM-extracted identifiers: {llm_ids}")
+        else:
+            # LLM failed to extract enough identifiers — fall back to prior tool output IDs
+            prior_ids = _extract_product_ids(tool_outputs)
+            if prior_ids and len(prior_ids) >= 2:
+                params["product_ids"] = prior_ids
+                logger.info(f"ComparisonTool using prior tool output IDs: {prior_ids}")
+            elif llm_ids:
+                # LLM gave something but < 2; merge with prior IDs
+                merged = list(llm_ids)
+                for pid in _extract_product_ids(tool_outputs):
+                    if pid not in merged:
+                        merged.append(pid)
+                params["product_ids"] = merged
+                logger.info(f"ComparisonTool using merged identifiers: {merged}")
+            else:
+                params["product_ids"] = _extract_product_ids(tool_outputs) or []
+                logger.warning(f"ComparisonTool: no LLM ids, using prior: {params['product_ids']}")
 
     # Execute tool
     try:

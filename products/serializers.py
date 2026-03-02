@@ -169,6 +169,16 @@ class AgenticRAGQuerySerializer(serializers.Serializer):
         return value.strip()
 
 
+class RAGProductCardSerializer(serializers.Serializer):
+    """Lightweight product card returned alongside RAG answers"""
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    price = serializers.FloatField()
+    currency = serializers.CharField()
+    rating_avg = serializers.FloatField()
+    primary_image = serializers.CharField(allow_null=True)
+
+
 class AgenticRAGResponseSerializer(serializers.Serializer):
     """Response serializer for agentic RAG queries"""
     answer = serializers.CharField(
@@ -193,4 +203,10 @@ class AgenticRAGResponseSerializer(serializers.Serializer):
     )
     evaluation_notes = serializers.CharField(
         help_text="Evaluation feedback and notes"
+    )
+    products = RAGProductCardSerializer(
+        many=True,
+        required=False,
+        default=[],
+        help_text="Relevant products referenced in the answer"
     )

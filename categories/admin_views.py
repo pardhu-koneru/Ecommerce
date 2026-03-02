@@ -2,7 +2,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, filters
 from drf_spectacular.utils import extend_schema
 
 from .models import Category
@@ -23,6 +23,10 @@ class AdminCategoryManagementViewSet(ModelViewSet):
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticated, IsAdmin]
     lookup_field = 'slug'
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name', 'slug', 'description']
+    ordering_fields = ['name', 'created_at', 'is_active']
+    ordering = ['name']
 
     def get_queryset(self):
         """Return all categories (including inactive) for admins"""
@@ -36,7 +40,7 @@ class AdminCategoryManagementViewSet(ModelViewSet):
     @extend_schema(description="List all categories including inactive ones (admin only)")
     def list(self, request, *args, **kwargs):
         """Get all categories with filters"""
-        queryset = self.get_queryset()
+        queryset = self.filter_queryset(self.get_queryset())
         
         # Filter by active status if provided
         is_active = request.query_params.get('is_active')

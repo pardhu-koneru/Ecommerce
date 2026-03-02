@@ -2,7 +2,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, filters
 from drf_spectacular.utils import extend_schema, OpenApiParameter, inline_serializer
 from drf_spectacular.types import OpenApiTypes
 from rest_framework import serializers as drf_serializers
@@ -28,6 +28,10 @@ class AdminProductManagementViewSet(ModelViewSet):
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
     lookup_field = 'id'
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['title', 'description', 'brand']
+    ordering_fields = ['created_at', 'title', 'price', 'stock_quantity', 'is_active']
+    ordering = ['-created_at']
 
     def get_queryset(self):
         """Return all products (including inactive) with optimized queries"""
@@ -46,7 +50,7 @@ class AdminProductManagementViewSet(ModelViewSet):
     @extend_schema(description="List all products including inactive ones (admin only)")
     def list(self, request, *args, **kwargs):
         """Get all products with filters"""
-        queryset = self.get_queryset()
+        queryset = self.filter_queryset(self.get_queryset())
         
         # Filter by active status if provided
         is_active = request.query_params.get('is_active')
@@ -57,6 +61,14 @@ class AdminProductManagementViewSet(ModelViewSet):
         category_id = request.query_params.get('category_id')
         if category_id:
             queryset = queryset.filter(category_id=category_id)
+        
+        # Filter by stock status if provided
+        in_stock = request.query_params.get('in_stock')
+        if in_stock is not None:
+            if in_stock.lower() == 'true':
+                queryset = queryset.filter(stock_quantity__gt=0)
+            else:
+                queryset = queryset.filter(stock_quantity=0)
         
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)

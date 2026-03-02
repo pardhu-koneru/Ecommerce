@@ -112,6 +112,10 @@ def run_query(
         "loop_count": 0,
     }
 
+    # Clear per-request embedding cache to avoid stale data across requests
+    from ai_agentic_rag.tools.product_vector_tool import clear_embedding_cache
+    clear_embedding_cache()
+
     graph = get_graph()
     final_state = graph.invoke(initial_state)
 
@@ -124,6 +128,7 @@ def run_query(
             to.get("tool") for to in final_state.get("tool_outputs", [])
             if to.get("tool") != "noop"
         ],
+        "tool_outputs": final_state.get("tool_outputs", []),
         "loop_count": final_state.get("loop_count", 0),
         "evaluation_notes": final_state.get("evaluation_notes", ""),
     }

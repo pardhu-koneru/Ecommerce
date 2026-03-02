@@ -111,6 +111,8 @@ def plan(state: AgentState) -> AgentState:
     """
     LangGraph node: build the retrieval plan.
     Updates state["plan"] and state["current_step_index"].
+    Deduplicates: removes standalone ProductEmbeddingSearchTool / BM25KeywordSearchTool
+    if HybridSearchFusionTool is already in the plan (since Hybrid runs both internally).
     """
     query = state.get("query", "")
     analysis = state.get("analysis", {})
@@ -153,8 +155,8 @@ def plan(state: AgentState) -> AgentState:
         if not steps:
             raise ValueError("Empty plan from LLM")
 
-        state["plan"] = steps
-        logger.info(f"PlanningAgent → {len(steps)} steps")
+        state["plan"] = _deduplicate_plan(steps)
+        logger.info(f"PlanningAgent → {len(state['plan'])} steps")
 
     except Exception as e:
         logger.warning(f"PlanningAgent LLM failed ({e}), using fallback planner")
@@ -163,3 +165,38 @@ def plan(state: AgentState) -> AgentState:
     state["current_step_index"] = 0
     state["tool_outputs"] = state.get("tool_outputs", [])
     return state
+
+
+def _deduplicate_plan(steps: List[str]) -> List[str]:
+    """
+    Remove redundant tool steps from the plan.
+    If HybridSearchFusionTool is present, remove standalone
+    ProductEmbeddingSearchTool and BM25KeywordSearchTool steps
+    since Hybrid already runs both internally.
+    """
+    has_hybrid = any("HybridSearchFusionTool" in s or "hybrid" in s.lower() or "fusion" in s.lower()
+                     for s in steps)
+
+    if not has_hybrid:
+        return steps
+
+    filtered = []
+    for step in steps:
+        # Skip standalone vector/BM25 if hybrid covers them
+        if "ProductEmbeddingSearchTool" in step and "Hybrid" not in step:
+            logger.info(f"Deduplicated: removed '{step}' (covered by HybridSearchFusionTool)")
+            continue
+        if "BM25KeywordSearchTool" in step and "Hybrid" not in step:
+            logger.info(f"Deduplicated: removed '{step}' (covered by HybridSearchFusionTool)")
+            continue
+        # Also catch fuzzy step descriptions
+        step_lower = step.lower()
+        if has_hybrid and ("product" in step_lower and "embed" in step_lower) and "hybrid" not in step_lower:
+            logger.info(f"Deduplicated: removed '{step}' (covered by HybridSearchFusionTool)")
+            continue
+        if has_hybrid and ("bm25" in step_lower or "keyword search" in step_lower) and "hybrid" not in step_lower:
+            logger.info(f"Deduplicated: removed '{step}' (covered by HybridSearchFusionTool)")
+            continue
+        filtered.append(step)
+
+    return filtered if filtered else steps  # safety: never return empty plan

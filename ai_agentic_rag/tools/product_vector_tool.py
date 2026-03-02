@@ -2,8 +2,11 @@
 ProductEmbeddingSearchTool — semantic vector search over AIDocumentEmbedding.
 
 Uses pgvector cosine distance to find the most relevant product documents.
+Includes a per-request embedding cache to avoid redundant Ollama calls
+(e.g., HybridSearchFusionTool + standalone vector search on the same query).
 """
 import logging
+import threading
 from typing import Dict, Any, List, Optional
 
 from django.db.models import Q
@@ -15,6 +18,9 @@ from ai_agentic_rag.config import VECTOR_TOP_K
 logger = logging.getLogger(__name__)
 
 _ai_service: Optional[AIService] = None
+# Thread-safe per-request embedding cache (cleared between requests)
+_embedding_cache: Dict[str, List[float]] = {}
+_cache_lock = threading.Lock()
 
 
 def _get_ai_service() -> AIService:
@@ -22,6 +28,33 @@ def _get_ai_service() -> AIService:
     if _ai_service is None:
         _ai_service = AIService()
     return _ai_service
+
+
+def clear_embedding_cache():
+    """Call at the start of each RAG request to reset the cache."""
+    global _embedding_cache
+    with _cache_lock:
+        _embedding_cache = {}
+
+
+def _get_or_create_embedding(query: str) -> List[float]:
+    """
+    Return a cached embedding for the query text, or generate & cache a new one.
+    Avoids redundant Ollama calls when the same query is embedded multiple times
+    within a single request (e.g., HybridSearchFusionTool + standalone vector search).
+    """
+    with _cache_lock:
+        if query in _embedding_cache:
+            logger.debug(f"Embedding cache HIT for query: {query[:60]}...")
+            return _embedding_cache[query]
+
+    ai = _get_ai_service()
+    embedding = ai.generate_embedding(query)
+
+    with _cache_lock:
+        _embedding_cache[query] = embedding
+
+    return embedding
 
 
 def run(
@@ -41,8 +74,7 @@ def run(
         }
     """
     try:
-        ai = _get_ai_service()
-        query_embedding = ai.generate_embedding(query)
+        query_embedding = _get_or_create_embedding(query)
 
         if not query_embedding or all(v == 0.0 for v in query_embedding):
             return {

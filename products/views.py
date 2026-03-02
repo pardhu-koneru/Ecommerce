@@ -9,7 +9,7 @@ from drf_spectacular.openapi import OpenApiTypes
 import base64
 import logging
 
-from .models import Product
+from .models import Product, ProductImage
 from .serializers import (
     ProductSerializer,
     ProductListSerializer,
@@ -21,6 +21,69 @@ from .serializers import (
 from .services import ProductService
 
 logger = logging.getLogger(__name__)
+
+
+def _extract_product_ids_from_tool_outputs(tool_outputs):
+    """
+    Extract unique product IDs from all tool outputs returned by the RAG pipeline.
+
+    Different tools store product IDs under different keys:
+      - SQLFilterTool / ComparisonTool / StockCheckTool → products[].id
+      - ProductEmbeddingSearchTool / HybridSearchFusionTool / BM25KeywordSearchTool / ImageEmbeddingSearchTool → results[].source_id
+      - ReviewEmbeddingSearchTool → results[].product_id
+    """
+    product_ids = []
+    seen = set()
+
+    for entry in tool_outputs:
+        result = entry.get("result", entry)
+
+        # Tools that return products[].id
+        for product in result.get("products", []):
+            pid = product.get("id")
+            if pid and pid not in seen:
+                seen.add(pid)
+                product_ids.append(pid)
+
+        # Tools that return results[].source_id or results[].product_id
+        for item in result.get("results", []):
+            pid = item.get("source_id") or item.get("product_id")
+            if pid and pid not in seen:
+                seen.add(pid)
+                product_ids.append(pid)
+
+    return product_ids
+
+
+def _build_product_cards(product_ids, limit=10):
+    """
+    Given a list of product IDs (strings), return lightweight product card dicts
+    with id, title, price, currency, rating_avg, and primary image URL.
+    Preserves the ordering from product_ids.
+    """
+    if not product_ids:
+        return []
+
+    products = (
+        Product.objects
+        .filter(id__in=product_ids[:limit], is_active=True)
+        .prefetch_related("images")
+    )
+    product_map = {}
+    for p in products:
+        primary = p.images.filter(is_primary=True).first()
+        image_url = primary.image.url if primary else None
+        product_map[str(p.id)] = {
+            "id": str(p.id),
+            "title": p.title,
+            "price": float(p.price),
+            "currency": p.currency,
+            "rating_avg": p.rating_avg,
+            "primary_image": image_url,
+        }
+
+    # Preserve original tool-output ordering
+    return [product_map[pid] for pid in product_ids[:limit] if pid in product_map]
 
 
 class ProductViewSet(ReadOnlyModelViewSet):
@@ -330,6 +393,12 @@ class AgenticRAGQueryView(APIView):
 
             result = run_query(query=query, image_data=image_b64)
 
+            # Extract referenced product IDs from tool outputs and build cards
+            tool_outputs = result.get("tool_outputs", [])
+            product_cards = _build_product_cards(
+                _extract_product_ids_from_tool_outputs(tool_outputs)
+            )
+
             response_data = {
                 "answer": result.get("answer", ""),
                 "confidence": result.get("confidence", 0.0),
@@ -338,6 +407,7 @@ class AgenticRAGQueryView(APIView):
                 "tools_used": result.get("tools_used", []),
                 "loop_count": result.get("loop_count", 0),
                 "evaluation_notes": result.get("evaluation_notes", ""),
+                "products": product_cards,
             }
 
             response_serializer = AgenticRAGResponseSerializer(response_data)
